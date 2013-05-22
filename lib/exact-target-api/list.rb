@@ -14,14 +14,17 @@ module ET
 
     # Example:
     # {"ListName" => NewListName, "Description" => "This list was created with the RubySDK", "Type" => "Private" }
-    def create(values)
-      res = post(values)
+    def create(params)
+      stringify_keys!(params)
+      res = post(params)
       assign_values(res)
       self
     end
 
-    def update(values)
-      data = values.merge('ID' => @list_id)
+    def update(params)
+      stringify_keys!(params)
+      data = params.merge('ID' => @list_id)
+
       res = patch(data)
 
       puts "[DEBUG] List update: #{res.inspect}"

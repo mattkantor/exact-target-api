@@ -9,15 +9,36 @@ module ET
       @obj = 'Subscriber'
     end
 
-    def create(email, params = {})
-      props = {'EmailAddress' => email}.merge(params)
-      props['Lists'] =  [{'ID' => @list_id.to_s}] if @list_id
+    def create(params = {})
+      stringify_keys!(params)
 
-      puts "[DEBUG] props: #{props}"
+      email = params.delete('email')
+
+      list_id = if params['list']
+        params.delete('list').id
+      elsif params['list_id']
+        params.delete('list_id')
+      elsif @list_id
+        @list_id
+      end
+
+      props = {'EmailAddress' => email}
+      props['SubscriberKey'] = params.delete('SubscriberKey') if params['SubscriberKey']
+
+      props['Lists'] =  [{'ID' => list_id.to_s}] if list_id
+
+      if params.count > 0
+         props['Attributes'] = params.map do |k, v|
+          {'Name' => k.to_s, 'Value' => v}
+        end
+      end
+
+      #puts "[DEBUG] props: #{props}"
 
       res = post(props)
       if assign_values(res)
         @email = email
+        @list_id = list_id
       end
 
       self
@@ -53,11 +74,11 @@ module ET
       @status = res.status
       @results = res.results
 
-      p 'Post Status: ' + res.status.to_s
-      p 'Code: ' + res.code.to_s
-      p 'Message: ' + res.message.to_s
-      p 'Result Count: ' + res.results.length.to_s
-      p 'Results: ' + res.results.inspect
+      #p 'Post Status: ' + res.status.to_s
+      #p 'Code: ' + res.code.to_s
+      #p 'Message: ' + res.message.to_s
+      #p 'Result Count: ' + res.results.length.to_s
+      #p 'Results: ' + res.results.inspect
       res.status
     end
 

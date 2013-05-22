@@ -9,5 +9,13 @@ module ET
       @lastRequestID = nil
       @endpoint = nil
     end
+
+
+    def stringify_keys!(params)
+      params.keys.each do |key|
+        params[key.to_s] = params.delete(key)
+      end
+      params
+    end
   end
 end

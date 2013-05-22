@@ -11,12 +11,7 @@ module ET
           attributes!: {'Objects' => {'xsi:type' => 'tns:' + objType}}
         }
 
-        puts '[DEBUG] post()'
-        puts "obj: #{obj.inspect}"
-
         response = client.auth.call(:create, message: obj)
-        #puts "authStub.auth.call(): #{response.inspect}"
-        #exit()
 
       ensure
         super(response)

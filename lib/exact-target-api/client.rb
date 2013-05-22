@@ -49,21 +49,18 @@ module ET
 
       @ready = @auth.operations.length > 0 && @status >= 200 && @status <= 400
 
-      puts "[DEBUG] Client created, @ready: #{@ready.inspect} | @status: #{@status.inspect}"
+      #puts "[DEBUG] Client created, @ready: #{@ready.inspect} | @status: #{@status.inspect}"
     end
 
     def refreshToken(force = nil)
-      puts "[DEBUG] refreshToken()"
       #If we don't already have a token or the token expires within 5 min(300 seconds), get one
-      if (@authToken.nil? || Time.new + 300 > @authTokenExpiration) || force
+      if force || @authToken.nil? || Time.new + 300 > @authTokenExpiration
         begin
           uri = URI.parse("https://auth.exacttargetapis.com/v1/requestToken?legacy=1")
           http = Net::HTTP.new(uri.host, uri.port)
           http.use_ssl = true
           request = Net::HTTP::Post.new(uri.request_uri)
           jsonPayload = {clientId: @clientId, clientSecret: @clientSecret}
-
-          puts "[DEBUG] jsonPayload: #{jsonPayload}"
 
           #Pass in the refreshKey if we have it
           if @refreshKey
@@ -73,8 +70,6 @@ module ET
           request.body = jsonPayload.to_json
           request.add_field "Content-Type", "application/json"
           tokenResponse = JSON.parse(http.request(request).body)
-
-          puts "[DEBUG] tokenResponse: #{tokenResponse}"
 
           if !tokenResponse.has_key?('accessToken')
             raise 'Unable to validate App Keys(ClientID/ClientSecret) provided: ' + http.request(request).body
@@ -112,41 +107,45 @@ module ET
       ET::List.new(self)
     end
 
-    def AddSubscriberToList(emailAddress, listIDs, subscriberKey = nil)
-      newSub = ET::Subscriber.new
-      newSub.authStub = self
-      lists = []
-
-      listIDs.each{ |p|
-        lists.push({"ID"=> p})
-      }
-
-      newSub.props = {"EmailAddress" => emailAddress, "Lists" => lists}
-      if !subscriberKey.nil?
-        newSub.props['SubscriberKey']  = subscriberKey
-      end
-
-      # Try to add the subscriber
-      postResponse = newSub.post
-
-      if !postResponse.status
-        # If the subscriber already exists in the account then we need to do an update.
-        # Update Subscriber On List
-        if postResponse.results[0][:error_code] == "12014"
-          patchResponse = newSub.patch
-          return patchResponse
-        end
-      end
-      postResponse
+    def subscriber
+      ET::Subscriber.new(self)
     end
 
-    def CreateDataExtensions(dataExtensionDefinitions)
-      newDEs = ET::DataExtension.new
-      newDEs.authStub = self
+    #def AddSubscriberToList(emailAddress, listIDs, subscriberKey = nil)
+    #  newSub = ET::Subscriber.new
+    #  newSub.authStub = self
+    #  lists = []
+    #
+    #  listIDs.each{ |p|
+    #    lists.push({"ID"=> p})
+    #  }
+    #
+    #  newSub.props = {"EmailAddress" => emailAddress, "Lists" => lists}
+    #  if !subscriberKey.nil?
+    #    newSub.props['SubscriberKey']  = subscriberKey
+    #  end
+    #
+    #  # Try to add the subscriber
+    #  postResponse = newSub.post
+    #
+    #  if !postResponse.status
+    #    # If the subscriber already exists in the account then we need to do an update.
+    #    # Update Subscriber On List
+    #    if postResponse.results[0][:error_code] == "12014"
+    #      patchResponse = newSub.patch
+    #      return patchResponse
+    #    end
+    #  end
+    #  postResponse
+    #end
 
-      newDEs.props = dataExtensionDefinitions
-      newDEs.post
-    end
+    #def CreateDataExtensions(dataExtensionDefinitions)
+    #  newDEs = ET::DataExtension.new
+    #  newDEs.authStub = self
+    #
+    #  newDEs.props = dataExtensionDefinitions
+    #  newDEs.post
+    #end
 
 
     protected
