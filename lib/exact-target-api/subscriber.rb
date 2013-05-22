@@ -13,6 +13,7 @@ module ET
       stringify_keys!(params)
 
       email = params.delete('email')
+      raise("Please provide email") if email.blank?
 
       list_id = if params['list']
         params.delete('list').id
@@ -32,8 +33,6 @@ module ET
           {'Name' => k.to_s, 'Value' => v}
         end
       end
-
-      #puts "[DEBUG] props: #{props}"
 
       res = post(props)
       if assign_values(res)
@@ -74,11 +73,6 @@ module ET
       @status = res.status
       @results = res.results
 
-      #p 'Post Status: ' + res.status.to_s
-      #p 'Code: ' + res.code.to_s
-      #p 'Message: ' + res.message.to_s
-      #p 'Result Count: ' + res.results.length.to_s
-      #p 'Results: ' + res.results.inspect
       res.status
     end
 

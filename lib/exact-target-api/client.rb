@@ -5,22 +5,19 @@ module ET
     attr_accessor :auth, :ready, :status, :debug, :authToken
     attr_reader :authTokenExpiration, :internalAuthToken, :wsdlLoc, :clientId, :clientSecret, :soapHeader, :authObj, :path, :appsignature, :stackID, :refreshKey
 
-    def initialize(config, getWSDL = nil, debug = nil, params = nil)
+    def initialize(config, getWSDL = true, debug = nil, params = nil)
       load_config(config)
 
       self.debug = debug
 
-      getWSDL = true unless getWSDL # ??????????
-
       @path = Dir.tmpdir()
 
       begin
-        #make a new WSDL
-        if getWSDL then
+        if getWSDL
           super(@path)
         end
 
-        if params && params.has_key?("jwt")
+        if params && params["jwt"]
           jwt = JWT.decode(params["jwt"], @appsignature, true)
           @authToken = jwt['request']['user']['oauthToken']
           @authTokenExpiration = Time.new + jwt['request']['user']['expiresIn']
@@ -48,8 +45,6 @@ module ET
       end
 
       @ready = @auth.operations.length > 0 && @status >= 200 && @status <= 400
-
-      #puts "[DEBUG] Client created, @ready: #{@ready.inspect} | @status: #{@status.inspect}"
     end
 
     def refreshToken(force = nil)

@@ -6,11 +6,11 @@ require 'exact-target-api/version'
 Gem::Specification.new do |gem|
   gem.name          = "exact-target-api"
   gem.version       = ET::VERSION
-  gem.authors       = ["thousandsofthem"]
+  gem.authors       = ["Alexander Shapiotko"]
   gem.email         = ["thousandsofthem@gmail.com"]
   gem.description   = "ExactTarget API wrapper"
   gem.summary       = "ExactTarget API wrapper"
-  gem.homepage      = "https://github.com/thousandsofthem/exact-target-api"
+  gem.homepage      = "https://github.com/BriteVerify/exact-target-api"
 
   gem.add_dependency "savon", "~> 2.2.0"
   gem.add_dependency "jwt", "~> 0.1.8"
