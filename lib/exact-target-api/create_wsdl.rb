@@ -36,5 +36,18 @@ module ET
       path + '/ExactTargetWSDL.xml'
     end
 
+    def stringify_keys!(params)
+      params.keys.each do |key|
+        params[key.to_s] = params.delete(key)
+      end
+      params
+    end
+
+    def symbolize_keys!(params)
+      params.keys.each do |key|
+        params[key.to_sym] = params.delete(key)
+      end
+      params
+    end
   end
 end

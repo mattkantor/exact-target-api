@@ -17,5 +17,12 @@ module ET
       end
       params
     end
+
+    def symbolize_keys!(params)
+      params.keys.each do |key|
+        params[key.to_sym] = params.delete(key)
+      end
+      params
+    end
   end
 end

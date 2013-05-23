@@ -5,20 +5,23 @@ module ET
     attr_accessor :auth, :ready, :status, :debug, :authToken
     attr_reader :authTokenExpiration, :internalAuthToken, :wsdlLoc, :clientId, :clientSecret, :soapHeader, :authObj, :path, :appsignature, :stackID, :refreshKey
 
-    def initialize(config, getWSDL = true, debug = nil, params = nil)
+    def initialize(config, options = {})
       load_config(config)
+      symbolize_keys!(options)
 
-      self.debug = debug
+      get_wsdl = options.has_key?(:wsdl) ? options[:wsdl] : true
+
+      @debug = options[:debug]
 
       @path = Dir.tmpdir()
 
       begin
-        if getWSDL
+        if get_wsdl
           super(@path)
         end
 
-        if params && params["jwt"]
-          jwt = JWT.decode(params["jwt"], @appsignature, true)
+        if options[:jwt]
+          jwt = JWT.decode(options[:jwt], @appsignature, true)
           @authToken = jwt['request']['user']['oauthToken']
           @authTokenExpiration = Time.new + jwt['request']['user']['expiresIn']
           @internalAuthToken = jwt['request']['user']['internalOauthToken']
@@ -34,7 +37,7 @@ module ET
                                endpoint: @endpoint,
                                wsse_auth: ["*", "*"],
                                raise_errors: false,
-                               log: self.debug,
+                               log: @debug,
                                open_timeout: 180,
                                read_timeout: 180)
         else
@@ -55,18 +58,16 @@ module ET
           http = Net::HTTP.new(uri.host, uri.port)
           http.use_ssl = true
           request = Net::HTTP::Post.new(uri.request_uri)
-          jsonPayload = {clientId: @clientId, clientSecret: @clientSecret}
 
-          #Pass in the refreshKey if we have it
-          if @refreshKey
-            jsonPayload['refreshToken'] = @refreshKey
-          end
+          jsonPayload = {clientId: @clientId, clientSecret: @clientSecret}
+          # Pass in the refreshKey if we have it
+          jsonPayload[:refreshToken] = @refreshKey if @refreshKey
 
           request.body = jsonPayload.to_json
           request.add_field "Content-Type", "application/json"
           tokenResponse = JSON.parse(http.request(request).body)
 
-          if !tokenResponse.has_key?('accessToken')
+          if tokenResponse['accessToken'].nil?
             raise 'Unable to validate App Keys(ClientID/ClientSecret) provided: ' + http.request(request).body
           end
 
@@ -147,10 +148,12 @@ module ET
 
 
     def load_config(config)
-      @clientId = config["clientid"] || config[:clientid] || raise("Please provide ClientID")
-      @clientSecret = config["clientsecret"] || config[:clientsecret] || raise("Please provide Client Secret")
-      @appsignature = config["appsignature"] || config[:appsignature]
-      @wsdl = config["defaultwsdl"] || config[:defaultwsdl] || 'https://webservice.exacttarget.com/etframework.wsdl'
+      symbolize_keys!(config)
+
+      @clientId = config[:clientid] || raise("Please provide ClientID")
+      @clientSecret = config[:clientsecret] || raise("Please provide Client Secret")
+      @appsignature = config[:appsignature]
+      @wsdl = config[:defaultwsdl] || 'https://webservice.exacttarget.com/etframework.wsdl'
     end
 
     def determineStack

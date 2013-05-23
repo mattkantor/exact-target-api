@@ -11,10 +11,17 @@ require 'exact-target-api'
 config = {
   clientid: 'xxxxxx',
   clientsecret: 'yyyyyy',
-  appsignature: 'zzzzzz'
+  appsignature: 'zzzzzz' # Optional
 }
 
-client = ET::Client.new(config)
+# All optional
+options = {
+  debug: false,
+  wsdl: true,
+  jwt: params[:jwt]
+}
+
+client = ET::Client.new(config, options)
 
 
 # Create new List
