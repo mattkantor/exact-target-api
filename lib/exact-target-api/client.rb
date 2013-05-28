@@ -13,7 +13,7 @@ module ET
 
       @debug = options[:debug]
 
-      @path = Dir.tmpdir()
+      @path = Dir.tmpdir
 
       begin
         if get_wsdl

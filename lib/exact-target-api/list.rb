@@ -13,7 +13,7 @@ module ET
     end
 
     # Example:
-    # {"ListName" => NewListName, "Description" => "This list was created with the RubySDK", "Type" => "Private" }
+    # {ListName: "NewListName", Description: "This list was created with the RubySDK", Type: "Private"}
     def create(params)
       stringify_keys!(params)
       res = post(params)
