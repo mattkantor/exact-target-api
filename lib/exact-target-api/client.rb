@@ -21,7 +21,7 @@ module ET
         end
 
         if options[:jwt]
-          jwt = JWT.decode(options[:jwt], @appsignature, true)
+          jwt = JWT.decode(options[:jwt], @appsignature, nil)
           @authToken = jwt['request']['user']['oauthToken']
           @authTokenExpiration = [Time.at(jwt['exp']), Time.now + jwt['request']['user']['expiresIn']].min
           @internalAuthToken = jwt['request']['user']['internalOauthToken']
