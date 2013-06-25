@@ -60,7 +60,10 @@ module ET
 
           jsonPayload = {clientId: @clientId, clientSecret: @clientSecret}#, accessType: 'offline'}
           # Pass in the refreshKey if we have it
-          jsonPayload[:refreshToken] = @refreshKey if @refreshKey
+          if @refreshKey
+            jsonPayload[:refreshToken] = @refreshKey 
+            jsonPayload['scope'] = "cas:#{@internalAuthToken}"
+          end
 
           request.body = jsonPayload.to_json
           request.add_field "Content-Type", "application/json"
