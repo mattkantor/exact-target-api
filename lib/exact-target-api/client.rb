@@ -27,7 +27,7 @@ module ET
           @internalAuthToken = jwt['request']['user']['internalOauthToken']
           @refreshKey = jwt['request']['user']['refreshToken']
 
-          self.determineStack
+          self.determine_stack
 
           @authObj = {'oAuth' => {'oAuthToken' => @internalAuthToken}}
           @authObj[:attributes!] = { 'oAuth' => { 'xmlns' => 'http://exacttarget.com' }}
@@ -41,7 +41,7 @@ module ET
                                open_timeout: 180,
                                read_timeout: 180)
         end
-        refreshToken
+        refresh_token
       rescue
         raise
       end
@@ -49,7 +49,7 @@ module ET
       @ready = @auth.operations.length > 0 && @status >= 200 && @status <= 400
     end
 
-    def refreshToken(force = nil)
+    def refresh_token(force = nil)
       #If we don't already have a token or the token expires within 5 min(300 seconds), get one
       if force || @authToken.nil? || Time.now + 300 > @authTokenExpiration
         begin
@@ -80,7 +80,7 @@ module ET
           end
 
 
-          self.determineStack if @endpoint.nil?
+          self.determine_stack if @endpoint.nil?
 
           @authObj = {'oAuth' => {'oAuthToken' => @internalAuthToken}}
           @authObj[:attributes!] = {'oAuth' => {'xmlns' => 'http://exacttarget.com' }}
@@ -157,7 +157,7 @@ module ET
       @wsdl = config[:defaultwsdl] || 'https://webservice.exacttarget.com/etframework.wsdl'
     end
 
-    def determineStack
+    def determine_stack
       begin
         uri = URI.parse("https://www.exacttargetapis.com/platform/v1/endpoints/soap?access_token=" + @authToken)
         http = Net::HTTP.new(uri.host, uri.port)
@@ -173,5 +173,7 @@ module ET
         raise 'Unable to determine stack using /platform/v1/tokenContext: ' + e.message
       end
     end
+
+    alias_method :refreshToken, :refresh_token
   end
 end
