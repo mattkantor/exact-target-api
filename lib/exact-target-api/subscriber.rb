@@ -24,7 +24,11 @@ module ET
       end
 
       props = {'EmailAddress' => email}
-      props['SubscriberKey'] = params.delete('SubscriberKey') if params['SubscriberKey']
+      props['SubscriberKey'] = if params['SubscriberKey']
+                                 params.delete('SubscriberKey')
+                               else
+                                 email
+                               end
 
       props['Lists'] =  [{'ID' => list_id.to_s}] if list_id
 
