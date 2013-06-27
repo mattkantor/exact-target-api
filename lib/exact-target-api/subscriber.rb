@@ -39,6 +39,12 @@ module ET
       end
 
       res = post(props)
+
+      # The subscriber is already on the list
+      if !res.status && res.results[0][:error_code] == "12014"
+        res = patch(props)
+      end
+
       if assign_values(res)
         @email = email
         @list_id = list_id
