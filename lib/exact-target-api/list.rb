@@ -16,6 +16,9 @@ module ET
     # {ListName: "NewListName", Description: "This list was created with the RubySDK", Type: "Private"}
     def create(params)
       stringify_keys!(params)
+      if (folder_id = params.delete('folder_id'))
+        params['CategoryID'] = folder_id
+      end
       res = post(params)
       assign_values(res)
       self

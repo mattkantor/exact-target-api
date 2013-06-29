@@ -58,5 +58,20 @@ puts subscriber.status # true
 puts subscriber.results	# {:partner_key=>nil, :object_id=>nil, :email_address=>"RubySDK@bh.exacttarget.com", :subscriber_key=>"RubySDK@bh.exacttarget.com", :status=>"Active", :"@xsi:type"=>"Subscriber"}
 
 
+# Folders
+folder_id = client.folders.find 'FolderName'
+folder_id = client.folders.create 'FolderName', parent_folder_id, 'Some description'
+folder_id = client.folders.find_or_create 'FolderName', parent_folder_id, 'Some description'
+
+list = client.list.create(
+  ListName: "...",
+  Description:  "...",
+  Type: "Private",
+  folder_id: folder_id
+  # OR
+  # CategoryID: folder_id
+)
+
+
 
 ```

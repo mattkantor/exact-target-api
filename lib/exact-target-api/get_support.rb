@@ -16,8 +16,10 @@ module ET
       ET::Describe.new(@client, @obj)
     end
 
-    def getMoreResults
+    def get_more_results
       ET::Continue.new(@client, @lastRequestID)
     end
+
+    alias_method :getMoreResults, :get_more_results
   end
 end

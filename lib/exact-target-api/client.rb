@@ -108,6 +108,10 @@ module ET
       ET::Subscriber.new(self)
     end
 
+    def folders
+      ET::Folders.new(self)
+    end
+
     #def AddSubscriberToList(emailAddress, listIDs, subscriberKey = nil)
     #  newSub = ET::Subscriber.new
     #  newSub.authStub = self
