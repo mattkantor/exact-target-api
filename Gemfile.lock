@@ -1,7 +1,7 @@
 PATH
   remote: .
   specs:
-    exact-target-api (0.0.3)
+    exact-target-api (0.0.4)
       jwt (~> 0.1.8)
       savon (~> 2.2.0)
 

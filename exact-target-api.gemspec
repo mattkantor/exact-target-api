@@ -6,8 +6,8 @@ require 'exact-target-api/version'
 Gem::Specification.new do |gem|
   gem.name          = "exact-target-api"
   gem.version       = ET::VERSION
-  gem.authors       = ["Alexander Shapiotko"]
-  gem.email         = ["thousandsofthem@gmail.com"]
+  gem.authors       = ["Alexander Shapiotko","BriteVerify"]
+  gem.email         = ["support@briteverify.com"]
   gem.description   = "ExactTarget API wrapper"
   gem.summary       = "ExactTarget API wrapper"
   gem.homepage      = "https://github.com/BriteVerify/exact-target-api"
