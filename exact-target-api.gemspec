@@ -12,6 +12,7 @@ Gem::Specification.new do |gem|
   gem.summary       = "ExactTarget API wrapper"
   gem.homepage      = "https://github.com/BriteVerify/exact-target-api"
 
+  gem.add_dependency "nokogiri", "~> 1.5.0"
   gem.add_dependency "savon", "~> 2.2.0"
   gem.add_dependency "jwt", "~> 0.1.8"
 
