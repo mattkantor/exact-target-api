@@ -7,8 +7,9 @@ module ET
         client.refreshToken
 
         obj = {
-          'Objects' => props,
-          attributes!: {'Objects' => {'xsi:type' => 'tns:' + objType}}
+          'Objects' => props.merge(
+            '@xsi:type' => 'tns:' + objType
+          )
         }
 
         response = client.auth.call(:create, message: obj)
