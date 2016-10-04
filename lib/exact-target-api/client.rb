@@ -23,7 +23,7 @@ module ET
         if options[:jwt]
           jwt = JWT.decode(options[:jwt], @appsignature, true)[0]
           @authToken = jwt['request']['user']['oauthToken']
-          @authTokenExpiration = [Time.at(jwt['exp']), Time.now + jwt['request']['user']['expiresIn']].min
+          @authTokenExpiration = [Time.at(jwt['exp']).utc, Time.now.utc + jwt['request']['user']['expiresIn']].min
           @internalAuthToken = jwt['request']['user']['internalOauthToken']
           @refreshKey = jwt['request']['user']['refreshToken']
 
@@ -50,8 +50,8 @@ module ET
     end
 
     def refresh_token(force = nil)
-      #If we don't already have a token or the token expires within 5 min(300 seconds), get one
-      if force || @authToken.nil? || Time.now + 300 > @authTokenExpiration
+      #If we don't already have a token or the token expires within 1 min, get one
+      if force || @authToken.nil? || Time.now.utc + 60 > @authTokenExpiration
         begin
           uri = URI.parse("https://auth.exacttargetapis.com/v1/requestToken?legacy=1")
           http = Net::HTTP.new(uri.host, uri.port)
