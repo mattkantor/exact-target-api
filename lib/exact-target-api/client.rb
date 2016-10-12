@@ -73,7 +73,7 @@ module ET
           end
 
           @authToken = tokenResponse['accessToken']
-          @authTokenExpiration = Time.new + tokenResponse['expiresIn']
+          @authTokenExpiration = Time.new.utc + tokenResponse['expiresIn']
           @internalAuthToken = tokenResponse['legacyToken']
           if tokenResponse["refreshToken"]
             @refreshKey = tokenResponse['refreshToken']
