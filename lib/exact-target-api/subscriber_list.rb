@@ -1,10 +1,10 @@
 module ET
-  class List
-    class Subscriber < ET::GetSupport
+  class Subscriber
+    class List < ET::CUDSupport
       def initialize(client)
         super()
         @client = client
-        @obj = 'ListSubscriber'
+        @obj = 'SubscriberList'
       end
     end
   end

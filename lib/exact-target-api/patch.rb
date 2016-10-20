@@ -1,20 +1,18 @@
 module ET
   class Patch < ET::Constructor
-    def initialize(authStub, objType, props = nil)
+    def initialize(authStub, obj_type, props = nil)
       @results = []
       begin
         authStub.refreshToken
-        if props.is_a? Array
+        if props.is_a?(Array)
           obj = { 'Objects' => [] }
           props.each do |p|
-            obj['Objects'] << p.merge('@xsi:type' => 'tns:' + objType)
+            obj['Objects'] << p.merge('@xsi:type' => 'tns:' + obj_type)
           end
         else
-          obj = { 'Objects' => props.merge('@xsi:type' => 'tns:' + objType) }
+          obj = { 'Objects' => props.merge('@xsi:type' => 'tns:' + obj_type) }
         end
-
         response = authStub.auth.call(:update, message: obj)
-
       ensure
         super(response)
         if @status

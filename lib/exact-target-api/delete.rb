@@ -1,33 +1,24 @@
 module ET
   class Delete < ET::Constructor
-    def initialize(authStub, objType, props = nil)
+    def initialize(authStub, obj_type, props = nil)
       @results = []
       begin
         authStub.refreshToken
-        if props.is_a? Array
-          obj = {
-            'Objects' => [],
-            :attributes! => { 'Objects' => { 'xsi:type' => ('tns:' + objType) } }
-          }
-          props.each{ |p|
-            obj['Objects'] << p
-          }
+        if props.is_a?(Array)
+          obj = { 'Objects' => [] }
+          props.each do |p|
+            obj['Objects'] << p.merge('@xsi:type' => 'tns:' + obj_type)
+          end
         else
-          obj = {
-            'Objects' => props,
-            :attributes! => { 'Objects' => { 'xsi:type' => ('tns:' + objType) } }
-          }
+          obj = { 'Objects' => props.merge('@xsi:type' => 'tns:' + obj_type) }
         end
-
-        response = authStub.auth.call(:delete, :message => obj)
+        response = authStub.auth.call(:delete, message: obj)
       ensure
         super(response)
         if @status
-          if @body[:delete_response][:overall_status] != "OK"
-            @status = false
-          end
+          @status = false if @body[:delete_response][:overall_status] != 'OK'
           if !@body[:delete_response][:results].is_a? Hash
-            @results = @results + @body[:delete_response][:results]
+            @results += @body[:delete_response][:results]
           else
             @results.push(@body[:delete_response][:results])
           end

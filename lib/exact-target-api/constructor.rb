@@ -20,9 +20,7 @@ module ET
           @status = false
         end
       elsif (@code = response.code)
-
-        @status = @code == "200"
-
+        @status = @code == '200'
         begin
           @results = JSON.parse(response.body)
         rescue

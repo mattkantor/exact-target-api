@@ -5,7 +5,7 @@ module ET
     def initialize(client, list_id = nil)
       super()
       @client = client
-      @list_id =  list_id
+      @list_id = list_id
       @obj = 'Subscriber'
     end
 
@@ -13,35 +13,35 @@ module ET
       stringify_keys!(params)
 
       email = params.delete('email')
-      raise("Please provide email") if email.blank?
+      raise('Please provide email') if email.blank?
 
       list_id = if params['list']
-        params.delete('list').id
-      elsif params['list_id']
-        params.delete('list_id')
-      elsif @list_id
-        @list_id
-      end
+                  params.delete('list').id
+                elsif params['list_id']
+                  params.delete('list_id')
+                elsif @list_id
+                  @list_id
+                end
 
-      props = {'EmailAddress' => email}
+      props = { 'EmailAddress' => email }
       props['SubscriberKey'] = if params['SubscriberKey']
                                  params.delete('SubscriberKey')
                                else
                                  email
                                end
 
-      props['Lists'] =  [{'ID' => list_id.to_s}] if list_id
+      props['Lists'] =  [{ 'ID' => list_id.to_s }] if list_id
 
       if params.count > 0
-         props['Attributes'] = params.map do |k, v|
-          {'Name' => k.to_s, 'Value' => v}
+        props['Attributes'] = params.map do |k, v|
+          { 'Name' => k.to_s, 'Value' => v }
         end
       end
 
       res = post(props)
 
       # The subscriber is already on the list
-      if !res.status && res.results[0][:error_code] == "12014"
+      if !res.status && res.results[0][:error_code] == '12014'
         res = patch(props)
       end
 
@@ -56,24 +56,58 @@ module ET
     def find(email)
       @email = email
 
-      props = ["SubscriberKey", "EmailAddress", "Status"]
-      filter = {'Property' => 'SubscriberKey', 'SimpleOperator' => 'equals', 'Value' => email}
+      props = %w(SubscriberKey EmailAddress Status)
+      filter = {
+        'Property' => 'SubscriberKey',
+        'SimpleOperator' => 'equals',
+        'Value' => email
+      }
 
       res = get(props, filter)
-      if assign_values(res)
-        @email = email
-      end
+      @email = email if assign_values(res)
 
+      self
+    end
+
+    def find_by_email(email)
+      @email = email
+      props = %w(SubscriberKey EmailAddress Status)
+      filter = {
+        'Property' => 'EmailAddress',
+        'SimpleOperator' => 'equals',
+        'Value' => email
+      }
+      res = get(props, filter)
+      @email = email if assign_values(res)
+      self
+    end
+
+    def delete_from_list(list_id, email, subscriber_key)
+      params = {
+        'Options' => {
+          'SaveOptions' => {
+            'SaveOption' => {
+              'PropertyName' => '*',
+              'SaveAction' => 'UpdateAdd'
+            }
+          }
+        },
+        'EmailAddress' => email,
+        'SubscriberKey' => subscriber_key,
+        'Lists' => {
+          'ID' => list_id,
+          'Action' => 'delete'
+        }
+      }
+      res = post(params)
+      assign_values(res)
       self
     end
 
     def update(params)
       params.merge!('EmailAddress' => @email)
-
-      # TODO ...
-
+      # TODO: ...
     end
-
 
     private
 
@@ -85,7 +119,5 @@ module ET
 
       res.status
     end
-
-
   end
 end

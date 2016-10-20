@@ -1,64 +1,63 @@
 module ET
   class Get < ET::Constructor
-    def initialize(client, objType, props = nil, filter = nil)
+    def initialize(client, obj_type, props = nil, filter = nil)
       @results = []
       client.refreshToken
-      if !props
-        resp = ET::Describe.new(client, objType)
+      unless props
+        resp = ET::Describe.new(client, obj_type)
         if resp
           props = []
-          resp.results.map { |p|
-            if p[:is_retrievable]
-              props << p[:name]
-            end
-          }
+          resp.results.map do |p|
+            props << p[:name] if p[:is_retrievable]
+          end
         end
       end
 
       # If the properties is a hash, then we just want to use the keys
-      if props.is_a? Hash then
-        obj = {'ObjectType' => objType,'Properties' => props.keys}
-      else
-        obj = {'ObjectType' => objType,'Properties' => props}
-      end
+      obj = if props.is_a?(Hash)
+              { 'ObjectType' => obj_type, 'Properties' => props.keys }
+            else
+              { 'ObjectType' => obj_type, 'Properties' => props }
+            end
 
-      if filter then
-        if filter.has_key?('LogicalOperator')
-          obj['Filter'] = filter
-          obj[:attributes!] = { 'Filter' => { 'xsi:type' => 'tns:ComplexFilterPart' }}
-          obj['Filter'][:attributes!] = { 'LeftOperand' => { 'xsi:type' => 'tns:SimpleFilterPart' }, 'RightOperand' => { 'xsi:type' => 'tns:SimpleFilterPart' }}
+      if filter
+        if filter.key?('LogicalOperator')
+          obj['Filter'] = filter.merge('@xsi:type' => 'tns:ComplexFilterPart')
+          obj['Filter']['LeftOperand']['@xsi:type'] = 'tns:SimpleFilterPart'
+          obj['Filter']['RightOperand']['@xsi:type'] = 'tns:SimpleFilterPart'
         else
-          obj['Filter'] = filter
-          obj[:attributes!] = { 'Filter' => { 'xsi:type' => 'tns:SimpleFilterPart' } }
+          obj['Filter'] = filter.merge('@xsi:type' => 'tns:SimpleFilterPart')
         end
       end
 
-      response = client.auth.call(:retrieve, message: {
-        'RetrieveRequest' => obj
-      })
+      response = client.auth.call(
+        :retrieve, message: { 'RetrieveRequest' => obj }
+      )
 
       super(response)
 
-      if @status
-        if @body[:retrieve_response_msg][:overall_status] != "OK" && @body[:retrieve_response_msg][:overall_status] != "MoreDataAvailable" then
-          @status = false
-          @message = @body[:retrieve_response_msg][:overall_status]
-        end
+      return unless @status
 
-        @moreResults = false
-        if @body[:retrieve_response_msg][:overall_status] == "MoreDataAvailable" then
-          @moreResults = true
-        end
-
-        if (!@body[:retrieve_response_msg][:results].is_a? Hash) && (!@body[:retrieve_response_msg][:results].nil?) then
-          @results = @results + @body[:retrieve_response_msg][:results]
-        elsif  (!@body[:retrieve_response_msg][:results].nil?)
-          @results.push(@body[:retrieve_response_msg][:results])
-        end
-
-        # Store the Last Request ID for use with continue
-        @request_id = @body[:retrieve_response_msg][:request_id]
+      if @body[:retrieve_response_msg][:overall_status] != 'OK' &&
+         @body[:retrieve_response_msg][:overall_status] != 'MoreDataAvailable'
+        @status = false
+        @message = @body[:retrieve_response_msg][:overall_status]
       end
+
+      @moreResults = false
+      if @body[:retrieve_response_msg][:overall_status] == 'MoreDataAvailable'
+        @moreResults = true
+      end
+
+      if !@body[:retrieve_response_msg][:results].is_a?(Hash) &&
+         !@body[:retrieve_response_msg][:results].nil?
+        @results += @body[:retrieve_response_msg][:results]
+      elsif !@body[:retrieve_response_msg][:results].nil?
+        @results.push(@body[:retrieve_response_msg][:results])
+      end
+
+      # Store the Last Request ID for use with continue
+      @request_id = @body[:retrieve_response_msg][:request_id]
     end
   end
 end
