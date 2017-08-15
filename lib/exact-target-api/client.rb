@@ -39,6 +39,7 @@ module ET
                                wsse_auth: ["*", "*"],
                                raise_errors: false,
                                log: @debug,
+                               pretty_print_xml: @debug,
                                open_timeout: 180,
                                read_timeout: 180)
         end
@@ -98,11 +99,23 @@ module ET
                                endpoint: @endpoint,
                                wsse_auth: ["*", "*"],
                                raise_errors: false,
+                               pretty_print_xml: @debug,
                                log: @debug)
         rescue StandardError => e
           raise 'Unable to validate App Keys(ClientID/ClientSecret) provided: ' + e.message
         end
       end
+    end
+
+    def data_extension
+      ET::DataExtension.new(self)
+    end
+
+    def data_extension_row(customer_key: nil, name: nil)
+      row = ET::DataExtension::Row.new(self)
+      row.CustomerKey = customer_key if customer_key.present?
+      row.Name = name if name.present?
+      row
     end
 
     def list

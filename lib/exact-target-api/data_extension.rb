@@ -2,9 +2,14 @@ module ET
   class DataExtension < ET::CUDSupport
     attr_accessor :columns
 
-    def initialize
-      super
+    def initialize(client)
+      super()
+      @client = client
       @obj = 'DataExtension'
+    end
+
+    def get
+      super(@props, @filter)
     end
 
     def post
@@ -31,7 +36,7 @@ module ET
         end
       end
 
-      obj = super
+      obj = super @props
       @props = originalProps
       obj
     end
@@ -90,8 +95,9 @@ module ET
     class Row < ET::CUDSupport
       attr_accessor :Name, :CustomerKey
 
-      def initialize
-        super
+      def initialize(client)
+        super()
+        @client = client
         @obj = "DataExtensionObject"
       end
 
@@ -118,36 +124,25 @@ module ET
       def post
         getCustomerKey
         originalProps = @props
-        currentProp = {}
-        ## FIX THIS
         if @props.is_a? Array then
-=begin
-				multiRow = []
-				@props.each { |currentDE|
-
-					currentDE['columns'].each { |key|
-						currentDE['Fields'] = {}
-						currentDE['Fields']['Field'] = []
-						currentDE['Fields']['Field'].push(key)
-					}
-					currentDE.delete('columns')
-					multiRow.push(currentDE.dup)
-				}
-
-				@props = multiRow
-=end
-        else
-          currentFields = []
-
-          @props.each { |key,value|
-            currentFields.push({"Name" => key, "Value" => value})
+          currentProps = @props.map do |currentProp|
+            {
+              'CustomerKey' => @CustomerKey,
+              'Properties' => {
+                'Property' => currentProp.map {|key,value| {"Name" => key, "Value" => value}}
+              }
+            }
+          end
+        elsif @props.is_a? Hash
+          currentProps = {
+            'CustomerKey' => @CustomerKey,
+            'Properties' => {
+              'Property' => @props.map {|key,value| {"Name" => key, "Value" => value}}
+            }
           }
-          currentProp['CustomerKey'] = @CustomerKey
-          currentProp['Properties'] = {}
-          currentProp['Properties']['Property'] = currentFields
         end
 
-        obj = ET::Post.new(@authStub, @obj, currentProp)
+        obj = super currentProps
         @props = originalProps
         obj
       end
@@ -186,13 +181,12 @@ module ET
 
       def getCustomerKey
         if @CustomerKey.nil?
-          if @CustomerKey.nil? && @Name.nil?
+          if @Name.nil?
             raise 'Unable to process DataExtension::Row request due to CustomerKey and Name not being defined on ET::DatExtension::row'
           else
-            de = ET::DataExtension.new
-            de.authStub = @authStub
-            de.props = ["Name","CustomerKey"]
-            de.filter = {'Property' => 'CustomerKey','SimpleOperator' => 'equals','Value' => @Name}
+            de = ET::DataExtension.new(@client)
+            de.props = ["Name", "CustomerKey"]
+            de.filter = {'Property' => 'Name','SimpleOperator' => 'equals','Value' => @Name}
             getResponse = de.get
             if getResponse.status && (getResponse.results.length == 1) then
               @CustomerKey = getResponse.results[0][:customer_key]
@@ -205,7 +199,7 @@ module ET
 
       def getName
         if @Name.nil?
-          if @CustomerKey.nil? && @Name.nil?
+          if @CustomerKey.nil?
             raise 'Unable to process DataExtension::Row request due to CustomerKey and Name not being defined on ET::DatExtension::row'
           else
             de = ET::DataExtension.new

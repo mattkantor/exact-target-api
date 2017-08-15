@@ -5,8 +5,13 @@ module ET
       begin
         client.refreshToken
         obj = {}
-        obj['Options'] = props.delete('Options') if props.key?('Options')
-        obj['Objects'] = props.merge('@xsi:type' => 'tns:' + obj_type)
+        if props.is_a? Array
+          obj['Objects'] = props.map { |prop| prop.merge('@xsi:type' => 'tns:' + obj_type) }
+        else
+          obj['Options'] = props.delete('Options') if props.key?('Options')
+          obj['Objects'] = props.merge('@xsi:type' => 'tns:' + obj_type)
+        end
+
         response = client.auth.call(:create, message: obj)
       ensure
         super(response)
