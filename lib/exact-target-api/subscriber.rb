@@ -9,48 +9,48 @@ module ET
       @obj = 'Subscriber'
     end
 
-    def create(params = {})
-      stringify_keys!(params)
-
-      email = params.delete('email')
-      raise('Please provide email') if email.blank?
-
-      list_id = if params['list']
-                  params.delete('list').id
-                elsif params['list_id']
-                  params.delete('list_id')
-                elsif @list_id
-                  @list_id
-                end
-
-      props = { 'EmailAddress' => email }
-      props['SubscriberKey'] = if params['SubscriberKey']
-                                 params.delete('SubscriberKey')
-                               else
-                                 email
-                               end
-
-      props['Lists'] =  [{ 'ID' => list_id.to_s }] if list_id
-
-      if params.count > 0
-        props['Attributes'] = params.map do |k, v|
-          { 'Name' => k.to_s, 'Value' => v }
+    def post
+      if @props.is_a? Array then
+        currentProps = @props.map do |prop|
+          {
+            'Lists' => { 'ID' => @list_id },
+            'SubscriberKey' => prop['EmailAddress'],
+            'EmailAddress' => prop['EmailAddress'],
+          }
         end
+      elsif @props.is_a? Hash
+        currentProps = {
+          'Lists' => { 'ID' => @list_id },
+          'SubscriberKey' => @props['EmailAddress'],
+          'EmailAddress' => @props['EmailAddress'],
+        }
+      end
+      postResponse = super(currentProps)
+      response = postResponse
+
+      emails = postResponse.results.map do |result|
+        result[:object][:email_address] if result[:error_code] == '12014'
+      end.compact.uniq
+      if emails.any?
+        newCurrentProps = currentProps.select {|prop| emails.include? prop['EmailAddress']}
+        patchResponse = patch(newCurrentProps)
+        response = mergeResponses(postResponse, patchResponse)
+      end
+      response
+    end
+
+    def mergeResponses(postResponse, patchResponse)
+      response = postResponse.dup
+      postResults = postResponse.results.select do |result|
+        result[:status_code] != 'Error'
+      end
+      patchResults = patchResponse.results.select do |result|
+        result[:status_code] != 'Error'
       end
 
-      res = post(props)
-
-      # The subscriber is already on the list
-      if !res.status && res.results[0][:error_code] == '12014'
-        res = patch(props)
-      end
-
-      if assign_values(res)
-        @email = email
-        @list_id = list_id
-      end
-
-      self
+      response.results = postResults | patchResults
+      response.status = true
+      response
     end
 
     def find(email)
@@ -102,11 +102,6 @@ module ET
       res = post(params)
       assign_values(res)
       self
-    end
-
-    def update(params)
-      params.merge!('EmailAddress' => @email)
-      # TODO: ...
     end
 
     private

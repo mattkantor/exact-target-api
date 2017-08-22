@@ -122,8 +122,8 @@ module ET
       ET::List.new(self)
     end
 
-    def subscriber
-      ET::Subscriber.new(self)
+    def subscriber(list_id = nil)
+      ET::Subscriber.new(self, list_id)
     end
 
     def folders

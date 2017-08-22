@@ -1,6 +1,6 @@
 module ET
   class DataExtension < ET::CUDSupport
-    attr_accessor :columns
+    attr_accessor :columns, :name
 
     def initialize(client)
       super()
@@ -16,29 +16,15 @@ module ET
       originalProps = @props
 
       if @props.is_a? Array
-        multiDE = []
-        @props.each { |currentDE|
-          currentDE['Fields'] = {}
-          currentDE['Fields']['Field'] = []
-          currentDE['columns'].each { |key|
-            currentDE['Fields']['Field'].push(key)
-          }
-          currentDE.delete('columns')
-          multiDE.push(currentDE.dup)
-        }
-
-        @props = multiDE
+        # not sure we need this
       else
-        @props['Fields'] = {'Field' => []}
-
-        @columns.each do |key|
-          @props['Fields']['Field'].push(key)
-        end
+        @props['Fields'] = {'Field' => @columns}
       end
 
-      obj = super @props
+      response = super @props
+      @name = response.results[0][:object][:name]
       @props = originalProps
-      obj
+      response
     end
 
     def patch
@@ -142,9 +128,9 @@ module ET
           }
         end
 
-        obj = super currentProps
+        response = super currentProps
         @props = originalProps
-        obj
+        response
       end
 
       def patch

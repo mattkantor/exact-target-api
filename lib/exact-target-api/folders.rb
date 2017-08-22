@@ -2,20 +2,19 @@ module ET
   class Folders < ET::BaseObject
     def initialize(client)
       @client = client
-
-
     end
 
-    def find_or_create(name, parent_folder_id, description = '', options = {})
-      if (folder_id = find(name))
+    def find_or_create(name, type, description = '', parent_folder_id = nil, options = {})
+      if (folder_id = find(name, type))
         folder_id
       else
-        create(name, parent_folder_id, description, options)
+        parent_folder_id ||= default_by_type(type)
+        create(name, type, description, parent_folder_id, options)
       end
     end
 
 
-    def find(name)
+    def find(name, type)
       folder = ET::Folder.new
       folder.client = @client
       props = ["ID"]
@@ -29,7 +28,29 @@ module ET
         'RightOperand' => {
           'Property' => 'ContentType',
           'SimpleOperator' => 'equals',
-          'Value' => 'EMAIL'
+          'Value' => type
+        }
+      }
+      res = folder.get(props, filter)
+
+      res.results[0][:id] if res.results[0]
+    end
+
+    def default_by_type(type)
+      folder = ET::Folder.new
+      folder.client = @client
+      props = ["ID"]
+      filter = {
+        'LeftOperand' => {
+          'Property' => 'ParentFolder.ID',
+          'SimpleOperator' => 'equals',
+          'Value' => '0'
+        },
+        'LogicalOperator' => 'AND',
+        'RightOperand' => {
+          'Property' => 'ContentType',
+          'SimpleOperator' => 'equals',
+          'Value' => type
         }
       }
       res = folder.get(props, filter)
@@ -38,7 +59,7 @@ module ET
     end
 
 
-    def create(name, parent_folder_id, description = '', options = {})
+    def create(name, type, description = '',parent_folder_id = 0, options = {})
       stringify_keys!(options)
 
       folder = ET::Folder.new
@@ -46,8 +67,8 @@ module ET
       data = {
         "CustomerKey" => name,
         "Name" => name,
-        "ContentType"=> "EMAIL",
-        "ParentFolder" => {"ID" => parent_folder_id},
+        "ContentType"=> type,
+        "ParentFolder" => {"ID" => parent_folder_id, "IDSpecified" => 0},
         "Description" => description
       }.merge(options)
 

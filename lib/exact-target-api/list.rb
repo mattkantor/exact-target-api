@@ -14,6 +14,12 @@ module ET
 
     # Example:
     # {ListName: "NewListName", Description: "This list was created with the RubySDK", Type: "Private"}
+    def post
+      response = super(@props)
+      @list_id = response.results[0][:new_id]
+      response
+    end
+
     def create(params)
       stringify_keys!(params)
       if (folder_id = params.delete('folder_id'))
@@ -21,19 +27,6 @@ module ET
       end
       res = post(params)
       assign_values(res)
-      self
-    end
-
-    def update(params)
-      stringify_keys!(params)
-      data = params.merge('ID' => @list_id)
-
-      res = patch(data)
-
-      puts "[DEBUG] List update: #{res.inspect}"
-
-      raise('implement me')
-
       self
     end
 
