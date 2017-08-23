@@ -83,7 +83,7 @@ module ET
     end
 
     def delete_from_list(list_id, email, subscriber_key)
-      params = {
+      props = {
         'Options' => {
           'SaveOptions' => {
             'SaveOption' => {
@@ -99,7 +99,7 @@ module ET
           'Action' => 'delete'
         }
       }
-      res = post(params)
+      res = ET::Post.new(@client, @obj, props)
       assign_values(res)
       self
     end
