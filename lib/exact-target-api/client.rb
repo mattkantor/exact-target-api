@@ -14,36 +14,15 @@ module ET
       @debug = options[:debug]
       @path = Dir.tmpdir
 
+      @refresh_token = options[:refresh_token]
+      @auth_endpoint = options[:auth_endpoint]
+      @exp = options[:exp]
+      @access_token = options[:access_token]
+
       begin
         super(@path) if get_wsdl
-
-        if options[:jwt]
-          jwt = JWT.decode(options[:jwt], @appsignature, true)[0]
-          @authToken = jwt['request']['user']['oauthToken']
-          @authTokenExpiration = [Time.at(jwt['exp']).utc, Time.now.utc + jwt['request']['user']['expiresIn']].min
-          @internalAuthToken = jwt['request']['user']['internalOauthToken']
-          @refreshKey = jwt['request']['user']['refreshToken']
-
-          determine_stack
-
-          @authObj = {
-            'oAuth' => {
-              'oAuthToken' => @internalAuthToken,
-              '@xmlns' => 'http://exacttarget.com'
-            }
-          }
-
-          @auth = Savon.client(soap_header: @authObj,
-                               wsdl: File.read(wsdl_file(@path)),
-                               endpoint: @endpoint,
-                               wsse_auth: ["*", "*"],
-                               raise_errors: false,
-                               log: @debug,
-                               pretty_print_xml: @debug,
-                               open_timeout: 180,
-                               read_timeout: 180)
-        end
-        refresh_token
+        refresh_token()
+        auth_client()
       rescue
         raise
       end
@@ -54,53 +33,14 @@ module ET
 
     def refresh_token(force = nil)
       # If we don't have a token or the token expires within 1 min, get one
-      if force || @authToken.nil? || Time.now.utc + 60 > @authTokenExpiration
+      if force || @access_token.nil? || token_expired?
         begin
-          uri = URI.parse('https://auth.exacttargetapis.com/v1/requestToken?legacy=1')
-          http = Net::HTTP.new(uri.host, uri.port)
-          http.use_ssl = true
-          request = Net::HTTP::Post.new(uri.request_uri)
+          token = get_token
+          @exp = (Time.now.utc + token['expiresIn']).to_i
+          @access_token = token['accessToken']
+          @refresh_token = token['refreshToken'] if token['refreshToken'].present?
 
-          json_payload = {
-            clientId: @clientId,
-            clientSecret: @clientSecret,
-            accessType: 'offline'
-          }
-          if @refreshKey
-            json_payload[:refreshToken] = @refreshKey
-            json_payload[:scope] = "cas:#{@internalAuthToken}"
-          end
-          request.body = json_payload.to_json
-          request.add_field 'Content-Type', 'application/json'
-          token_response = JSON.parse(http.request(request).body)
-
-          if token_response['accessToken'].nil?
-            raise 'Unable to validate App Keys(ClientID/ClientSecret) provided: ' + http.request(request).body
-          end
-
-          @authToken = token_response['accessToken']
-          @authTokenExpiration = Time.new.utc + token_response['expiresIn']
-          @internalAuthToken = token_response['legacyToken']
-          if token_response['refreshToken']
-            @refreshKey = token_response['refreshToken']
-          end
-
-          determine_stack if @endpoint.nil?
-
-          @authObj = {
-            'oAuth' => {
-              'oAuthToken' => @internalAuthToken,
-              '@xmlns' => 'http://exacttarget.com'
-            }
-          }
-
-          @auth = Savon.client(soap_header: @authObj,
-                               wsdl: File.read(wsdl_file(@path)),
-                               endpoint: @endpoint,
-                               wsse_auth: ["*", "*"],
-                               raise_errors: false,
-                               pretty_print_xml: @debug,
-                               log: @debug)
+          auth_client()
         rescue StandardError => e
           raise 'Unable to validate App Keys(ClientID/ClientSecret) provided: ' + e.message
         end
@@ -149,20 +89,50 @@ module ET
       @wsdl = config[:defaultwsdl] || 'https://webservice.exacttarget.com/etframework.wsdl'
     end
 
-    def determine_stack
-      uri = URI.parse('https://www.exacttargetapis.com/platform/v1/endpoints/soap?access_token=' + @authToken)
+    def get_token
+      uri = URI.parse(@auth_endpoint)
       http = Net::HTTP.new(uri.host, uri.port)
-
       http.use_ssl = true
+      request = Net::HTTP::Post.new(uri.request_uri)
+      hash = { clientId: @clientId, clientSecret: @clientSecret, accessType: 'offline' }
+      hash[:refreshToken] = @refresh_token if @access_token.present?
+      request.body = hash.to_json
+      request.add_field 'Content-Type', 'application/json'
+      token_response = JSON.parse(http.request(request).body)
+      if token_response['accessToken'].nil?
+        raise 'Unable to validate App Keys(ClientID/ClientSecret) provided: ' + http.request(request).body
+      end
+      token_response
+    end
 
+    def get_soap_endpoint(access_token)
+      uri = URI.parse('https://www.exacttargetapis.com/platform/v1/endpoints/soap?access_token=' + access_token)
+      http = Net::HTTP.new(uri.host, uri.port)
+      http.use_ssl = true
       request = Net::HTTP::Get.new(uri.request_uri)
-
       contextResponse = JSON.parse(http.request(request).body)
-      @endpoint = contextResponse['url']
-
+      contextResponse['url']
     rescue StandardError => e
-      raise 'Unable to determine stack using /platform/v1/tokenContext: ' +
-            e.message
+      raise 'Unable to determine stack using /platform/v1/tokenContext: ' + e.message
+    end
+
+    def get_soap_header(access_token)
+      { 'fueloauth' => access_token }
+    end
+
+    def token_expired?
+      Time.now.utc + 60 > Time.at(@exp.to_i).utc
+    end
+
+    def auth_client
+      soap_endpoint = get_soap_endpoint(@access_token)
+      soap_header = get_soap_header(@access_token)
+
+      @auth = Savon.client(
+        soap_header: soap_header, wsdl: File.read(wsdl_file(@path)),
+        endpoint: soap_endpoint, raise_errors: false,
+        pretty_print_xml: @debug, log: @debug
+      )
     end
 
     alias_method :refreshToken, :refresh_token
