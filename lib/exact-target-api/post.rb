@@ -3,7 +3,7 @@ module ET
     def initialize(client, obj_type, props = nil)
       @results = []
       begin
-        client.refreshToken
+        client.refresh_token
         obj = {}
         if props.is_a? Array
           obj['Objects'] = props.map { |prop| prop.merge('@xsi:type' => 'tns:' + obj_type) }

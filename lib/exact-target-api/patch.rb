@@ -3,7 +3,7 @@ module ET
     def initialize(authStub, obj_type, props = nil)
       @results = []
       begin
-        authStub.refreshToken
+        authStub.refresh_token
         if props.is_a?(Array)
           obj = { 'Objects' => [] }
           props.each do |p|

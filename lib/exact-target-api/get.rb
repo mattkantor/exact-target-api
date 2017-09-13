@@ -2,7 +2,7 @@ module ET
   class Get < ET::Constructor
     def initialize(client, obj_type, props = nil, filter = nil)
       @results = []
-      client.refreshToken
+      client.refresh_token
       unless props
         resp = ET::Describe.new(client, obj_type)
         if resp

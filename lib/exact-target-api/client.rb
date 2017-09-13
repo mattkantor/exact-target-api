@@ -3,9 +3,7 @@ require 'tmpdir'
 module ET
   class Client < ET::CreateWSDL
     attr_accessor :auth, :ready, :status, :debug, :authToken
-    attr_reader :authTokenExpiration, :internalAuthToken, :wsdlLoc, :clientId,
-                :clientSecret, :soapHeader, :authObj, :path, :appsignature,
-                :stackID, :refreshKey
+    attr_reader :wsdlLoc, :clientId, :clientSecret, :path, :appsignature
 
     def initialize(config, options = {})
       load_config(config)
@@ -134,7 +132,5 @@ module ET
         pretty_print_xml: @debug, log: @debug
       )
     end
-
-    alias_method :refreshToken, :refresh_token
   end
 end

@@ -2,12 +2,12 @@ module ET
 
   class GetRest <  ET::Constructor
     def initialize(authStub, endpoint, qs = nil)
-      authStub.refreshToken
+      authStub.refresh_token
 
       if qs
-        qs['access_token'] = authStub.authToken
+        qs['access_token'] = authStub.access_token
       else
-        qs = {"access_token" => authStub.authToken}
+        qs = {"access_token" => authStub.access_token}
       end
 
       uri = URI.parse(endpoint)

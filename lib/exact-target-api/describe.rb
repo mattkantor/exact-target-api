@@ -1,7 +1,7 @@
 module ET
   class Describe < ET::Constructor
     def initialize(authStub = nil, obj_type = nil)
-      authStub.refreshToken
+      authStub.refresh_token
       response = authStub.auth.call(
         :describe,
         message: {
