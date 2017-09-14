@@ -12,7 +12,7 @@ module ET
       @debug = options[:debug]
       @path = Dir.tmpdir
 
-      @refresh_token = options[:refresh_token]
+      @refresh_key = options[:refresh_token]
       @auth_endpoint = options[:auth_endpoint]
       @exp = options[:exp]
       @access_token = options[:access_token]
@@ -36,7 +36,7 @@ module ET
           token = get_token
           @exp = (Time.now.utc + token['expiresIn']).to_i
           @access_token = token['accessToken']
-          @refresh_token = token['refreshToken'] if token['refreshToken'].present?
+          @refresh_key = token['refreshToken'] if token['refreshToken'].present?
 
           auth_client()
         rescue StandardError => e
@@ -93,7 +93,7 @@ module ET
       http.use_ssl = true
       request = Net::HTTP::Post.new(uri.request_uri)
       hash = { clientId: @clientId, clientSecret: @clientSecret, accessType: 'offline' }
-      hash[:refreshToken] = @refresh_token if @access_token.present?
+      hash[:refreshToken] = @refresh_key if @access_token.present?
       request.body = hash.to_json
       request.add_field 'Content-Type', 'application/json'
       token_response = JSON.parse(http.request(request).body)
