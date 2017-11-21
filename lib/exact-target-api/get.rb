@@ -1,6 +1,15 @@
 module ET
   class Get < ET::Constructor
     def initialize(client, obj_type, props = nil, filter = nil)
+      response = make_request(client, obj_type, props, filter)
+      if @token_expired
+        client.refresh_token(true)
+        response = make_request(client, obj_type, props, filter)
+      end
+      response
+    end
+
+    def make_request(client, obj_type, props, filter)
       @results = []
       client.refresh_token
       unless props

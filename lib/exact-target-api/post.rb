@@ -1,6 +1,15 @@
 module ET
   class Post < ET::Constructor
     def initialize(client, obj_type, props = nil)
+      response = make_request(client, obj_type, props)
+      if @token_expired
+        client.refresh_token(true)
+        response = make_request(client, obj_type, props)
+      end
+      response
+    end
+
+    def make_request(client, obj_type, props)
       @results = []
       begin
         client.refresh_token

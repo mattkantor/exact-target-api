@@ -30,18 +30,12 @@ module ET
     end
 
     def refresh_token(force = nil)
-      # If we don't have a token or the token expires within 1 min, get one
       if force || @access_token.nil? || token_expired?
-        begin
-          token = get_token
-          @exp = (Time.now.utc + token['expiresIn']).to_i
-          @access_token = token['accessToken']
-          @refresh_key = token['refreshToken'] if token['refreshToken'].present?
-
-          auth_client()
-        rescue StandardError => e
-          raise 'Unable to validate App Keys(ClientID/ClientSecret) provided: ' + e.message
-        end
+        token = get_token
+        @exp = (Time.now.utc + token['expiresIn']).to_i
+        @access_token = token['accessToken']
+        @refresh_key = token['refreshToken'] if token['refreshToken'].present?
+        auth_client()
       end
     end
 
@@ -92,11 +86,14 @@ module ET
       http = Net::HTTP.new(uri.host, uri.port)
       http.use_ssl = true
       request = Net::HTTP::Post.new(uri.request_uri)
-      hash = { clientId: @clientId, clientSecret: @clientSecret, accessType: 'offline' }
+      hash = { clientId: @clientId, clientSecret: @clientSecret }
+      # accessType: 'offline'
       hash[:refreshToken] = @refresh_key if @access_token.present?
+
       request.body = hash.to_json
       request.add_field 'Content-Type', 'application/json'
-      token_response = JSON.parse(http.request(request).body)
+      response = http.request(request)
+      token_response = JSON.parse(response.body)
       if token_response['accessToken'].nil?
         raise 'Unable to validate App Keys(ClientID/ClientSecret) provided: ' + http.request(request).body
       end
@@ -119,7 +116,7 @@ module ET
     end
 
     def token_expired?
-      Time.now.utc + 60 > Time.at(@exp.to_i).utc
+      Time.now.to_i + 60 > @exp.to_i
     end
 
     def auth_client
