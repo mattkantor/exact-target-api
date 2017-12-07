@@ -1,9 +1,9 @@
 module ET
   class PostRest <  ET::Constructor
     def initialize(authStub, endpoint, payload)
-      authStub.refreshToken
+      authStub.refresh_token
 
-      qs = {"access_token" => authStub.authToken}
+      qs = {"access_token" => authStub.access_token}
       uri = URI.parse(endpoint)
       uri.query = URI.encode_www_form(qs)
       http = Net::HTTP.new(uri.host, uri.port)

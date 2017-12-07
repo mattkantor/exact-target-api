@@ -2,7 +2,7 @@ module ET
   class Continue < ET::Constructor
     def initialize(authStub, request_id)
       @results = []
-      authStub.refreshToken
+      authStub.refresh_token
       obj = {'ContinueRequest' => request_id}
       response = authStub.auth.call(:retrieve, :message => {'RetrieveRequest' => obj})
 

@@ -1,39 +1,30 @@
 module ET
   class DataExtension < ET::CUDSupport
-    attr_accessor :columns
+    attr_accessor :columns, :name
 
-    def initialize
-      super
+    def initialize(client)
+      super()
+      @client = client
       @obj = 'DataExtension'
+    end
+
+    def get
+      super(@props, @filter)
     end
 
     def post
       originalProps = @props
 
       if @props.is_a? Array
-        multiDE = []
-        @props.each { |currentDE|
-          currentDE['Fields'] = {}
-          currentDE['Fields']['Field'] = []
-          currentDE['columns'].each { |key|
-            currentDE['Fields']['Field'].push(key)
-          }
-          currentDE.delete('columns')
-          multiDE.push(currentDE.dup)
-        }
-
-        @props = multiDE
+        # not sure we need this
       else
-        @props['Fields'] = {'Field' => []}
-
-        @columns.each do |key|
-          @props['Fields']['Field'].push(key)
-        end
+        @props['Fields'] = {'Field' => @columns}
       end
 
-      obj = super
+      response = super @props
+      @name = response.results[0][:object][:name]
       @props = originalProps
-      obj
+      response
     end
 
     def patch
@@ -90,8 +81,9 @@ module ET
     class Row < ET::CUDSupport
       attr_accessor :Name, :CustomerKey
 
-      def initialize
-        super
+      def initialize(client)
+        super()
+        @client = client
         @obj = "DataExtensionObject"
       end
 
@@ -118,38 +110,27 @@ module ET
       def post
         getCustomerKey
         originalProps = @props
-        currentProp = {}
-        ## FIX THIS
         if @props.is_a? Array then
-=begin
-				multiRow = []
-				@props.each { |currentDE|
-
-					currentDE['columns'].each { |key|
-						currentDE['Fields'] = {}
-						currentDE['Fields']['Field'] = []
-						currentDE['Fields']['Field'].push(key)
-					}
-					currentDE.delete('columns')
-					multiRow.push(currentDE.dup)
-				}
-
-				@props = multiRow
-=end
-        else
-          currentFields = []
-
-          @props.each { |key,value|
-            currentFields.push({"Name" => key, "Value" => value})
+          currentProps = @props.map do |currentProp|
+            {
+              'CustomerKey' => @CustomerKey,
+              'Properties' => {
+                'Property' => currentProp.map {|key,value| {"Name" => key, "Value" => value}}
+              }
+            }
+          end
+        elsif @props.is_a? Hash
+          currentProps = {
+            'CustomerKey' => @CustomerKey,
+            'Properties' => {
+              'Property' => @props.map {|key,value| {"Name" => key, "Value" => value}}
+            }
           }
-          currentProp['CustomerKey'] = @CustomerKey
-          currentProp['Properties'] = {}
-          currentProp['Properties']['Property'] = currentFields
         end
 
-        obj = ET::Post.new(@authStub, @obj, currentProp)
+        response = super currentProps
         @props = originalProps
-        obj
+        response
       end
 
       def patch
@@ -186,13 +167,12 @@ module ET
 
       def getCustomerKey
         if @CustomerKey.nil?
-          if @CustomerKey.nil? && @Name.nil?
+          if @Name.nil?
             raise 'Unable to process DataExtension::Row request due to CustomerKey and Name not being defined on ET::DatExtension::row'
           else
-            de = ET::DataExtension.new
-            de.authStub = @authStub
-            de.props = ["Name","CustomerKey"]
-            de.filter = {'Property' => 'CustomerKey','SimpleOperator' => 'equals','Value' => @Name}
+            de = ET::DataExtension.new(@client)
+            de.props = ["Name", "CustomerKey"]
+            de.filter = {'Property' => 'Name','SimpleOperator' => 'equals','Value' => @Name}
             getResponse = de.get
             if getResponse.status && (getResponse.results.length == 1) then
               @CustomerKey = getResponse.results[0][:customer_key]
@@ -205,7 +185,7 @@ module ET
 
       def getName
         if @Name.nil?
-          if @CustomerKey.nil? && @Name.nil?
+          if @CustomerKey.nil?
             raise 'Unable to process DataExtension::Row request due to CustomerKey and Name not being defined on ET::DatExtension::row'
           else
             de = ET::DataExtension.new

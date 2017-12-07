@@ -4,16 +4,16 @@ module ET
       super
     end
 
-    def post(data)
-      ET::Post.new(@client, @obj, data)
+    def post(props)
+      ET::Post.new(@client, @obj, props)
     end
 
-    def patch(data)
-      ET::Patch.new(@client, @obj, data)
+    def patch(props)
+      ET::Patch.new(@client, @obj, props)
     end
 
-    def delete(data)
-      ET::Delete.new(@client, @obj, data)
+    def delete(props)
+      ET::Delete.new(@client, @obj, props)
     end
   end
 end

@@ -24,54 +24,38 @@ options = {
 client = ET::Client.new(config, options)
 
 
-# Create new List
-list = client.list.create(
-  ListName: "Test-List",
-  Description:  "Test List",
-  Type: "Private"
-)
+list_name = "email test"
+data_extension_name = "data_extension test"
+emails = (1..25).map { |c| "email_#{c}@gmail.com" }
 
-puts "List ID is #{list.id}"
+# @client.folders.find_or_create(name, type, description)
 
-# Find a List
-list2 = client.list.find(list.id)
+data_extension_folder_id = client.folders.find_or_create('BriteVerify', 'DATAEXTENSION', 'BriteVerify dataextension folder')
+# Will create or get folder
 
-# Create invalid subscriber
-subscriber = client.subscriber.create(email: 'foo@bar.aaaa')
-subscriber = client.subscriber.create(email: 'foo@bar.aaaa', list: list)
-subscriber = client.subscriber.create(email: 'foo@bar.aaaa', list_id: 12345, name: "Foo Bar")
+data_extension = client.data_extension
+data_extension.props = { "Name" => data_extension_name, 'CategoryID' => data_extension_folder_id }
+data_extension.columns = [ {"Name" => "Email", "FieldType" => "EmailAddress", "IsRequired" => "true"} ]
+data_extension.post
+# Will create data extension
 
-puts subscriber.code # 200
-puts subscriber.status # false
-puts subscriber.results # {:status_code=>"Error", :status_message=>"TriggeredSpamFilter", :ordinal_id=>"0", :error_code=>"12002", :new_id=>"0", :object=>{:partner_key=>nil, :object_id=>nil, :email_address=>"foo@bar.aaaa", :lists=>{:partner_key=>nil, :id=>"3488", :object_id=>nil}, :"@xsi:type"=>"Subscriber"}}
-
-# Create valid subscriber
-subscriber = client.subscriber.create(email: "RubySDK@bh.exacttarget.com", name: "Foo Bar", Description: "Some text")
-puts subscriber.code # 200
-puts subscriber.status # true
-puts subscriber.results # {:status_code=>"OK", :status_message=>"Created Subscriber.", :ordinal_id=>"0", :new_id=>"24761785", :object=>{:partner_key=>nil, :id=>"24761785", :object_id=>nil, :email_address=>"RubySDK@bh.exacttarget.com", :attributes=>[{:name=>"name", :value=>"Foo Bar"}, {:name=>"Description", :value=>"Some text"}], :"@xsi:type"=>"Subscriber"}}
-
-# Find a  subscriber
-subscriber = client.subscriber.find("RubySDK@bh.exacttarget.com")
-
-puts subscriber.status # true
-puts subscriber.results	# {:partner_key=>nil, :object_id=>nil, :email_address=>"RubySDK@bh.exacttarget.com", :subscriber_key=>"RubySDK@bh.exacttarget.com", :status=>"Active", :"@xsi:type"=>"Subscriber"}
+data_extension_row = client.data_extension_row(name: data_extension.name)
+data_extension_row.props = emails.map { |e| { 'Email' => e } }
+data_extension_row.post
+# Will create batch rows
 
 
-# Folders
-folder_id = client.folders.find 'FolderName'
-folder_id = client.folders.create 'FolderName', parent_folder_id, 'Some description'
-folder_id = client.folders.find_or_create 'FolderName', parent_folder_id, 'Some description'
+list_folder_id = client.folders.find_or_create('BriteVerify', 'LIST', 'BriteVerify list folder')
+# Will create or get folder
 
-list = client.list.create(
-  ListName: "...",
-  Description:  "...",
-  Type: "Private",
-  folder_id: folder_id
-  # OR
-  # CategoryID: folder_id
-)
+list = client.list
+list.props = { 'ListName' => list_name, 'Category' => list_folder_id }
+list.post
+# Will create email list
 
-
+subscribers = client.subscriber(list.id)
+subscribers.props = emails.map { |e| { 'EmailAddress' => e } }
+subscribers.post
+# Will create batch subscribers
 
 ```

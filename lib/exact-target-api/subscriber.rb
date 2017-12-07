@@ -5,75 +5,104 @@ module ET
     def initialize(client, list_id = nil)
       super()
       @client = client
-      @list_id =  list_id
+      @list_id = list_id
       @obj = 'Subscriber'
     end
 
-    def create(params = {})
-      stringify_keys!(params)
-
-      email = params.delete('email')
-      raise("Please provide email") if email.blank?
-
-      list_id = if params['list']
-        params.delete('list').id
-      elsif params['list_id']
-        params.delete('list_id')
-      elsif @list_id
-        @list_id
-      end
-
-      props = {'EmailAddress' => email}
-      props['SubscriberKey'] = if params['SubscriberKey']
-                                 params.delete('SubscriberKey')
-                               else
-                                 email
-                               end
-
-      props['Lists'] =  [{'ID' => list_id.to_s}] if list_id
-
-      if params.count > 0
-         props['Attributes'] = params.map do |k, v|
-          {'Name' => k.to_s, 'Value' => v}
+    def post
+      if @props.is_a? Array then
+        currentProps = @props.map do |prop|
+          {
+            'Lists' => { 'ID' => @list_id },
+            'SubscriberKey' => prop['EmailAddress'],
+            'EmailAddress' => prop['EmailAddress'],
+          }
         end
+      elsif @props.is_a? Hash
+        currentProps = {
+          'Lists' => { 'ID' => @list_id },
+          'SubscriberKey' => @props['EmailAddress'],
+          'EmailAddress' => @props['EmailAddress'],
+        }
+      end
+      postResponse = super(currentProps)
+      response = postResponse
+
+      emails = postResponse.results.map do |result|
+        result[:object][:email_address] if result[:error_code] == '12014'
+      end.compact.uniq
+      if emails.any?
+        newCurrentProps = currentProps.select {|prop| emails.include? prop['EmailAddress']}
+        patchResponse = patch(newCurrentProps)
+        response = mergeResponses(postResponse, patchResponse)
+      end
+      response
+    end
+
+    def mergeResponses(postResponse, patchResponse)
+      response = postResponse.dup
+      postResults = postResponse.results.select do |result|
+        result[:status_code] != 'Error'
+      end
+      patchResults = patchResponse.results.select do |result|
+        result[:status_code] != 'Error'
       end
 
-      res = post(props)
-
-      # The subscriber is already on the list
-      if !res.status && res.results[0][:error_code] == "12014"
-        res = patch(props)
-      end
-
-      if assign_values(res)
-        @email = email
-        @list_id = list_id
-      end
-
-      self
+      response.results = postResults | patchResults
+      response.status = true
+      response
     end
 
     def find(email)
       @email = email
 
-      props = ["SubscriberKey", "EmailAddress", "Status"]
-      filter = {'Property' => 'SubscriberKey', 'SimpleOperator' => 'equals', 'Value' => email}
+      props = %w(SubscriberKey EmailAddress Status)
+      filter = {
+        'Property' => 'SubscriberKey',
+        'SimpleOperator' => 'equals',
+        'Value' => email
+      }
 
       res = get(props, filter)
-      if assign_values(res)
-        @email = email
-      end
+      @email = email if assign_values(res)
 
       self
     end
 
-    def update(params)
-      params.merge!('EmailAddress' => @email)
-
-      # TODO ...
-
+    def find_by_email(email)
+      @email = email
+      props = %w(SubscriberKey EmailAddress Status)
+      filter = {
+        'Property' => 'EmailAddress',
+        'SimpleOperator' => 'equals',
+        'Value' => email
+      }
+      res = get(props, filter)
+      @email = email if assign_values(res)
+      self
     end
 
+    def delete_from_list(list_id, email, subscriber_key)
+      props = {
+        'Options' => {
+          'SaveOptions' => {
+            'SaveOption' => {
+              'PropertyName' => '*',
+              'SaveAction' => 'UpdateAdd'
+            }
+          }
+        },
+        'EmailAddress' => email,
+        'SubscriberKey' => subscriber_key,
+        'Lists' => {
+          'ID' => list_id,
+          'Action' => 'delete'
+        }
+      }
+      res = ET::Post.new(@client, @obj, props)
+      assign_values(res)
+      self
+    end
 
     private
 
@@ -85,7 +114,5 @@ module ET
 
       res.status
     end
-
-
   end
 end
