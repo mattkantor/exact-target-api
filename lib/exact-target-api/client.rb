@@ -1,6 +1,9 @@
 require 'tmpdir'
 
 module ET
+  class AuthError < StandardError
+  end
+
   class Client < ET::CreateWSDL
     attr_accessor :auth, :ready, :status, :debug, :authToken
     attr_reader :wsdlLoc, :clientId, :clientSecret, :path, :appsignature
@@ -31,7 +34,12 @@ module ET
 
     def refresh_token(force = nil)
       if force || @access_token.nil? || token_expired?
-        token = get_token
+        begin
+          token = get_token
+        rescue ET::AuthError
+          @access_token = nil
+          token = get_token
+        end
         @exp = (Time.now.utc + token['expiresIn']).to_i
         @access_token = token['accessToken']
         @refresh_key = token['refreshToken'] if token['refreshToken'].present?
@@ -95,7 +103,7 @@ module ET
       response = http.request(request)
       token_response = JSON.parse(response.body)
       if token_response['accessToken'].nil?
-        raise 'Unable to validate App Keys(ClientID/ClientSecret) provided: ' + http.request(request).body
+        raise ET::AuthError, 'Unable to validate App Keys(ClientID/ClientSecret) provided: ' + http.request(request).body
       end
       token_response
     end
