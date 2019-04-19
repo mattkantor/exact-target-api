@@ -2,9 +2,12 @@ module ET
   class CreateWSDL
     def initialize(path)
       # Get the header info for the correct wsdl
+      puts "Llama wsdl-lina: #{@wsdl.inspect}"
+      puts "Llama path path paths: #{path}"
       response = HTTPI.head(@wsdl)
       puts "MOOSE Response: #{response.inspect}"
       if response && response.code >= 200 && response.code <= 400
+        puts "MOOSE Response Headers: #{response.headers.inspect}"
         header = response.headers
         # Check when the WSDL was last modified
         modifiedTime = Date.parse(header['last-modified'])
