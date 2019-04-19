@@ -13,6 +13,7 @@ module ET
       symbolize_keys!(options)
       get_wsdl = options.key?(:wsdl) ? options[:wsdl] : true
       @debug = options[:debug]
+      puts "MOOSE: Dir.tmpdir filepath: #{Dir.tmpdir}"
       @path = Dir.tmpdir
 
       @refresh_key = options[:refresh_token]

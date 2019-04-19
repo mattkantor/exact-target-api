@@ -3,6 +3,7 @@ module ET
     def initialize(path)
       # Get the header info for the correct wsdl
       response = HTTPI.head(@wsdl)
+      puts "MOOSE Response: #{response.inspect}"
       if response && response.code >= 200 && response.code <= 400
         header = response.headers
         # Check when the WSDL was last modified
