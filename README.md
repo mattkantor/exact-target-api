@@ -1,6 +1,11 @@
 ExactTarget API wrapper
 =====================
 
+About:
+
+- exact Target SOAP API.
+
+
 Usage example:
 
 ```ruby
