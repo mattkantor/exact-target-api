@@ -4,14 +4,11 @@ ExactTarget API wrapper
 Usage example:
 
 ```ruby
-require 'rubygems'
-require 'bundler/setup'
-require 'exact-target-api'
+require 'exact_target_api'
 
 config = {
   clientid: 'xxxxxx',
-  clientsecret: 'yyyyyy',
-  appsignature: 'zzzzzz' # Optional
+  clientsecret: 'yyyyyy'
 }
 
 # All optional
