@@ -12,9 +12,9 @@ Gem::Specification.new do |gem|
   gem.summary       = 'ExactTarget API wrapper'
   gem.homepage      = 'https://github.com/BriteVerify/exact-target-api'
 
-  gem.add_dependency 'nokogiri', '~> 1.0'
-  gem.add_dependency 'savon', '~> 2.0'
-  gem.add_dependency 'jwt', '~> 1.0'
+  gem.add_dependency 'nokogiri', '~> 1.8.5'
+  gem.add_dependency 'savon', '~> 2.12.1'
+  gem.add_dependency 'jwt', '~> 2.2.3'
 
   gem.files         = `git ls-files`.split($/)
   gem.executables   = gem.files.grep(%r{^bin/}).map { |f| File.basename(f) }
